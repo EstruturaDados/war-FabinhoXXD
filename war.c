@@ -8,8 +8,7 @@ struct Territorio
     int qtTropas;
 };
 
-main()
-{
+int main(){
 
     struct Territorio territorios[5];
 

@@ -7,10 +7,6 @@
 #define MAX_NOME 50
 #define MAX_COR 20
 
-/* =========================
-   STRUCTS
-========================= */
-
 typedef struct {
     char nome[MAX_NOME];
     char corExercito[MAX_COR];
@@ -22,51 +18,32 @@ typedef enum {
     MISSAO_CONQUISTAR_3_TERRITORIOS = 2
 } TipoMissao;
 
-/* =========================
+/* =========================================
    FUNCOES AUXILIARES
-========================= */
+========================================= */
 
-/* Remove o '\n' deixado pelo fgets */
 void removerQuebraLinha(char *texto) {
     texto[strcspn(texto, "\n")] = '\0';
 }
 
-/* Limpa o buffer do teclado */
-void limparBuffer() {
+void limparBuffer(void) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
-/* Conta quantos territorios ainda possuem tropas */
-int contarTerritoriosAtivos(const Territorio *territorios, int total) {
-    int i;
-    int ativos = 0;
-
-    for (i = 0; i < total; i++) {
-        if (territorios[i].tropas > 0) {
-            ativos++;
-        }
-    }
-
-    return ativos;
-}
-
-/* Conta quantos territorios pertencem ao jogador (Azul) */
 int contarTerritoriosAzuis(const Territorio *territorios, int total) {
-    int i;
-    int quantidade = 0;
+    int i, contador = 0;
 
     for (i = 0; i < total; i++) {
         if (territorios[i].tropas > 0 &&
             strcmp(territorios[i].corExercito, "Azul") == 0) {
-            quantidade++;
+            contador++;
         }
     }
 
-    return quantidade;
+    return contador;
 }
 
-/* Verifica se ainda existe algum territorio Verde */
 int existeExercitoVerde(const Territorio *territorios, int total) {
     int i;
 
@@ -80,10 +57,9 @@ int existeExercitoVerde(const Territorio *territorios, int total) {
     return 0;
 }
 
-/* =========================
+/* =========================================
    NIVEL NOVATO
-   Cadastro inicial
-========================= */
+========================================= */
 
 void cadastrarTerritorios(Territorio *territorios, int total) {
     int i;
@@ -111,7 +87,6 @@ void cadastrarTerritorios(Territorio *territorios, int total) {
     }
 }
 
-/* Exibe o estado atual do mapa */
 void exibirMapa(const Territorio *territorios, int total) {
     int i;
 
@@ -119,23 +94,25 @@ void exibirMapa(const Territorio *territorios, int total) {
     printf("         ESTADO ATUAL DO MAPA\n");
     printf("=====================================\n");
 
+    /* Exibe somente territorios com tropas > 0 */
     for (i = 0; i < total; i++) {
-        printf("[%d] %-15s | Exercito: %-10s | Tropas: %d\n",
-               i + 1,
-               territorios[i].nome,
-               territorios[i].corExercito,
-               territorios[i].tropas);
+        if (territorios[i].tropas > 0) {
+            printf("[%d] %-15s | Exercito: %-10s | Tropas: %d\n",
+                   i + 1,
+                   territorios[i].nome,
+                   territorios[i].corExercito,
+                   territorios[i].tropas);
+        }
     }
 
     printf("=====================================\n\n");
 }
 
-/* =========================
-   NIVEL MESTRE
-   Missoes
-========================= */
+/* =========================================
+   NIVEL MESTRE - MISSOES
+========================================= */
 
-TipoMissao sortearMissao() {
+TipoMissao sortearMissao(void) {
     return (rand() % 2) + 1;
 }
 
@@ -143,7 +120,7 @@ void exibirMissao(TipoMissao missao) {
     printf("\n========== SUA MISSAO ==========\n");
 
     if (missao == MISSAO_DESTRUIR_VERDE) {
-        printf("Destruir completamente o exercito Verde.\n");
+        printf("Destruir o exercito Verde.\n");
     } else {
         printf("Conquistar 3 territorios com o exercito Azul.\n");
     }
@@ -151,25 +128,23 @@ void exibirMissao(TipoMissao missao) {
     printf("================================\n\n");
 }
 
-/* Retorna 1 se a missão foi concluída */
-int verificarMissao(const Territorio *territorios, int total, TipoMissao missao) {
+int verificarMissao(const Territorio *territorios,
+                    int total,
+                    TipoMissao missao) {
     if (missao == MISSAO_DESTRUIR_VERDE) {
-        if (!existeExercitoVerde(territorios, total)) {
-            return 1;
-        }
-    } else if (missao == MISSAO_CONQUISTAR_3_TERRITORIOS) {
-        if (contarTerritoriosAzuis(territorios, total) >= 3) {
-            return 1;
-        }
+        return !existeExercitoVerde(territorios, total);
+    }
+
+    if (missao == MISSAO_CONQUISTAR_3_TERRITORIOS) {
+        return contarTerritoriosAzuis(territorios, total) >= 3;
     }
 
     return 0;
 }
 
-/* =========================
-   NIVEL AVENTUREIRO
-   Batalhas
-========================= */
+/* =========================================
+   NIVEL AVENTUREIRO - BATALHAS
+========================================= */
 
 void atacar(Territorio *territorios, int total) {
     int atacante, defensor;
@@ -188,25 +163,28 @@ void atacar(Territorio *territorios, int total) {
     atacante--;
     defensor--;
 
-    /* Validacoes */
+    /* Validacao dos indices */
     if (atacante < 0 || atacante >= total ||
         defensor < 0 || defensor >= total) {
         printf("Territorio invalido!\n\n");
         return;
     }
 
+    /* Nao pode atacar a si mesmo */
     if (atacante == defensor) {
         printf("O territorio nao pode atacar a si mesmo!\n\n");
         return;
     }
 
-    if (territorios[atacante].tropas <= 1) {
-        printf("O territorio atacante precisa ter pelo menos 2 tropas.\n\n");
+    /* Atacante precisa ter tropas */
+    if (territorios[atacante].tropas <= 0) {
+        printf("O territorio atacante nao possui tropas.\n\n");
         return;
     }
 
+    /* Defensor precisa ter tropas */
     if (territorios[defensor].tropas <= 0) {
-        printf("O territorio defensor ja esta sem tropas.\n\n");
+        printf("O territorio defensor ja foi derrotado.\n\n");
         return;
     }
 
@@ -226,35 +204,47 @@ void atacar(Territorio *territorios, int total) {
     printf("Dado do atacante: %d\n", dadoAtaque);
     printf("Dado do defensor: %d\n", dadoDefesa);
 
-    /* Empate favorece o atacante */
+    /* Empates favorecem o atacante */
     if (dadoAtaque >= dadoDefesa) {
         printf("Resultado: Atacante venceu!\n");
 
+        /* O DEFENSOR perdeu a batalha e perde 1 tropa */
         territorios[defensor].tropas--;
 
-        /* Se o defensor ficou sem tropas, o territorio é conquistado */
+        /* Se zerou, foi derrotado e nao aparecerá mais no mapa */
         if (territorios[defensor].tropas <= 0) {
-            printf("Territorio conquistado!\n");
+            territorios[defensor].tropas = 0;
 
+            /* Opcional: o territorio passa a pertencer ao atacante */
             strcpy(territorios[defensor].corExercito,
                    territorios[atacante].corExercito);
 
-            territorios[defensor].tropas = 1;
-            territorios[atacante].tropas--;
+            printf("Territorio conquistado!\n");
+            printf("As tropas do defensor foram zeradas.\n");
         }
     } else {
         printf("Resultado: Defensor venceu!\n");
+
+        /* O ATACANTE perdeu a batalha e perde 1 tropa */
         territorios[atacante].tropas--;
+
+        /* Se zerou, foi derrotado e nao aparecerá mais no mapa */
+        if (territorios[atacante].tropas <= 0) {
+            territorios[atacante].tropas = 0;
+
+            printf("O territorio atacante foi derrotado!\n");
+            printf("As tropas do atacante foram zeradas.\n");
+        }
     }
 
     printf("===============================\n\n");
 }
 
-/* =========================
+/* =========================================
    MENU PRINCIPAL
-========================= */
+========================================= */
 
-void menu() {
+void menu(void) {
     printf("============== MENU ==============\n");
     printf("1 - Atacar\n");
     printf("2 - Verificar Missao\n");
@@ -264,52 +254,35 @@ void menu() {
     printf("Opcao: ");
 }
 
-/* =========================
-   FUNCAO PRINCIPAL
-========================= */
+/* =========================================
+   MAIN
+========================================= */
 
-int main() {
+int main(void) {
     Territorio *territorios;
     TipoMissao missao;
-    int opcao;
-    int territoriosAtivos;
+    int opcao = -1;
 
-    /* Inicializa aleatoriedade */
     srand((unsigned int)time(NULL));
 
-    /* NIVEL AVENTUREIRO:
-       Alocacao dinamica com calloc */
-    territorios = (Territorio *)calloc(TOTAL_TERRITORIOS, sizeof(Territorio));
+    /* Nivel Aventureiro: alocacao dinamica com calloc */
+    territorios = (Territorio *)calloc(TOTAL_TERRITORIOS,
+                                       sizeof(Territorio));
 
     if (territorios == NULL) {
         printf("Erro ao alocar memoria.\n");
         return 1;
     }
 
-    /* NIVEL NOVATO:
-       Cadastro manual dos territorios */
+    /* Nivel Novato: cadastro */
     cadastrarTerritorios(territorios, TOTAL_TERRITORIOS);
 
-    /* NIVEL MESTRE:
-       Sorteio e exibicao da missao */
+    /* Nivel Mestre: missao */
     missao = sortearMissao();
     exibirMissao(missao);
 
-    /* Loop principal */
+    /* Menu principal */
     do {
-        territoriosAtivos = contarTerritoriosAtivos(
-            territorios,
-            TOTAL_TERRITORIOS
-        );
-
-        /* Se restar apenas 1 territorio com tropas, fim do jogo */
-        if (territoriosAtivos == 1) {
-            printf("Restou apenas um territorio com tropas!\n");
-            printf("Fim do jogo!\n\n");
-            exibirMapa(territorios, TOTAL_TERRITORIOS);
-            break;
-        }
-
         menu();
         scanf("%d", &opcao);
         limparBuffer();
@@ -319,24 +292,21 @@ int main() {
                 atacar(territorios, TOTAL_TERRITORIOS);
                 exibirMapa(territorios, TOTAL_TERRITORIOS);
 
-                if (verificarMissao(
-                        territorios,
-                        TOTAL_TERRITORIOS,
-                        missao)) {
+                if (verificarMissao(territorios,
+                                    TOTAL_TERRITORIOS,
+                                    missao)) {
                     printf("PARABENS! VOCE CUMPRIU SUA MISSAO!\n");
-                    printf("VITORIA!\n\n");
-                    exibirMapa(territorios, TOTAL_TERRITORIOS);
+                    printf("VITORIA!\n");
                     opcao = 0;
                 }
                 break;
 
             case 2:
-                if (verificarMissao(
-                        territorios,
-                        TOTAL_TERRITORIOS,
-                        missao)) {
+                if (verificarMissao(territorios,
+                                    TOTAL_TERRITORIOS,
+                                    missao)) {
                     printf("Missao concluida!\n");
-                    printf("VITORIA!\n\n");
+                    printf("VITORIA!\n");
                     opcao = 0;
                 } else {
                     printf("Missao ainda nao concluida.\n\n");
@@ -357,7 +327,6 @@ int main() {
 
     } while (opcao != 0);
 
-    /* Libera memoria */
     free(territorios);
 
     return 0;
